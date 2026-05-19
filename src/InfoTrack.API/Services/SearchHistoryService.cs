@@ -12,16 +12,20 @@ public class SearchHistoryService : ISearchHistoryService
 
     public SearchHistoryService(AppDbContext db) => _db = db;
 
-    public async Task<List<SearchHistoryItemDto>> GetHistoryAsync() =>
-        await _db.SearchRecords
+    public async Task<List<SearchHistoryItemDto>> GetHistoryAsync()
+    {
+        var records = await _db.SearchRecords
             .OrderByDescending(r => r.SearchedAt)
-            .Select(r => new SearchHistoryItemDto(
-                r.Id,
-                r.SearchedAt,
-                JsonSerializer.Deserialize<List<string>>(r.LocationsJson) ?? new List<string>(),
-                r.TotalResults
-            ))
+            .Select(r => new { r.Id, r.SearchedAt, r.LocationsJson, r.TotalResults })
             .ToListAsync();
+
+        return records.Select(r => new SearchHistoryItemDto(
+            r.Id,
+            r.SearchedAt,
+            JsonSerializer.Deserialize<List<string>>(r.LocationsJson) ?? new List<string>(),
+            r.TotalResults
+        )).ToList();
+    }
 
     public async Task<SearchResultDto?> GetSearchResultAsync(int searchRecordId)
     {
